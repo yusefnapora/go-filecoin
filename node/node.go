@@ -365,7 +365,7 @@ func (nc *Config) Build(ctx context.Context) (*Node, error) {
 		return nil, err
 	}
 
-	var chainStore chain.Store = chain.NewDefaultStore(nc.Repo.ChainDatastore(), &cstOffline, genCid)
+	chainStore := chain.NewDefaultStore(ctx, bservice, bs, nc.Repo.ChainDatastore(), genCid)
 	powerTable := &consensus.MarketView{}
 
 	var processor consensus.Processor
@@ -384,10 +384,7 @@ func (nc *Config) Build(ctx context.Context) (*Node, error) {
 
 	// only the syncer gets the storage which is online connected
 	chainSyncer := chain.NewDefaultSyncer(&cstOnline, &cstOffline, nodeConsensus, chainStore)
-	chainReader, ok := chainStore.(chain.ReadStore)
-	if !ok {
-		return nil, errors.New("failed to cast chain.Store to chain.ReadStore")
-	}
+	var chainReader chain.ReadStore = chainStore
 	msgPool := core.NewMessagePool()
 
 	// Set up libp2p pubsub
