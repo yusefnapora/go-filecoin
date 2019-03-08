@@ -107,7 +107,7 @@ type MiningConfig struct {
 
 func newDefaultMiningConfig() *MiningConfig {
 	return &MiningConfig{
-		MinerAddress:            address.Address{},
+		MinerAddress:            address.Undef,
 		AutoSealIntervalSeconds: 120,
 		StoragePrice:            types.NewZeroAttoFIL(),
 	}
@@ -120,7 +120,7 @@ type WalletConfig struct {
 
 func newDefaultWalletConfig() *WalletConfig {
 	return &WalletConfig{
-		DefaultAddress: address.Address{},
+		DefaultAddress: address.Undef,
 	}
 }
 
