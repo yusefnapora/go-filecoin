@@ -8,6 +8,7 @@ import (
 	"github.com/filecoin-project/go-filecoin/api"
 	"github.com/filecoin-project/go-filecoin/consensus"
 	"github.com/filecoin-project/go-filecoin/types"
+	cbor "gx/ipfs/QmRoARq3nkUb13HSKZGepCZSWe5GrVPwx7xURJGZ7KWv9V/go-ipld-cbor"
 	"io/ioutil"
 	"math/big"
 	"strings"
@@ -349,7 +350,7 @@ func TestMinerCreateChargesGas(t *testing.T) {
 	wg.Add(1)
 	go func() {
 		miner := d.RunSuccess("miner", "create", "--from", fixtures.TestAddresses[2], "--price", "333", "--limit", "300", "100", "200")
-		addr, err := address.NewFromString(strings.Trim(miner.ReadStdout(), "\n"))
+		addr, err := address.NewFromString(miner.ReadStdoutTrimNewlines())
 		assert.NoError(err)
 		assert.NotEqual(addr, address.Address{})
 		wg.Done()
@@ -364,6 +365,55 @@ func TestMinerCreateChargesGas(t *testing.T) {
 	expectedBalance := expectedBlockReward.Add(expectedPrice.MulBigInt(expectedGasCost))
 	newBalance := queryBalance(t, d, miningMinerOwnerAddr)
 	assert.Equal(expectedBalance.String(), newBalance.Sub(startingBalance).String())
+}
+
+func TestMinerCreateHasPubKey(t *testing.T) {
+	t.Parallel()
+	assert := assert.New(t)
+	require := require.New(t)
+
+	d1 := th.NewDaemon(t, th.WithMiner(fixtures.TestMiners[0]), th.KeyFile(fixtures.KeyFilePaths()[2])).Start()
+	defer d1.ShutdownSuccess()
+	d := th.NewDaemon(t, th.KeyFile(fixtures.KeyFilePaths()[2])).Start()
+	defer d.ShutdownSuccess()
+	d1.ConnectSuccess(d)
+	var wg sync.WaitGroup
+	var err error
+	var minerAddr address.Address
+	wg.Add(1)
+	go func() {
+		res := d.RunSuccess("miner", "create", "--from", fixtures.TestAddresses[2], "--price", "333", "--limit", "300", "100", "200")
+		minerAddr, err = address.NewFromString(res.ReadStdoutTrimNewlines())
+		require.NoError(err)
+		require.NotEqual(address.Address{}, minerAddr)
+		wg.Done()
+	}()
+	// ensure mining runs after the command in our goroutine
+	d1.MineAndPropagate(5*time.Second, d)
+	wg.Wait()
+
+	data := d1.RunSuccess("chain", "ls", "-l", "--enc", "json").ReadStdout()
+	blocks := strings.Split(data, "\n")
+	massaged := []string{"blocks: ", string(blocks[0]), ",", string(blocks[1])}
+	joined := strings.Join(massaged, "")
+
+	var v map[string]*json.RawMessage
+	require.NoError(json.Unmarshal([]byte(joined), &v))
+
+	var msgParams []string
+	require.NoError(decode(v, "params", &msgParams))
+
+	paramsDec, err := cbor.Decode([]byte(msgParams[0]), types.DefaultHashFunction, -1)
+	assert.NotNil(paramsDec)
+}
+
+func decode(idd map[string]*json.RawMessage, key string, dest interface{}) error {
+	if raw := idd[key]; raw != nil {
+		if err := json.Unmarshal(*raw, &dest); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func queryBalance(t *testing.T, d *th.TestDaemon, actorAddr address.Address) *types.AttoFIL {
