@@ -291,7 +291,7 @@ jobs:
       - run:
           name: Create filecoin-proof-parameters archive
           command: |
-            GZIP=-1 tar -czvf "filecoin-proof-parameters-$CIRCLE_TAG.tar.gz" $HOME/filecoin-proof-parameters/{v9-zigzag-proof-of-replication-52431242c129794fe51d373ae29953f2ff52abd94c78756e318ce45f3e4946d8*,params.out}
+            ./scripts/archive-proofs-params.sh
       - run:
           name: Publish new release
           command: |
