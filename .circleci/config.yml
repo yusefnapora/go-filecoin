@@ -285,11 +285,11 @@ jobs:
 
       - mkdir_test_results
 
-      - go_test:
-          sector_builder_tests: "<< parameters.sector_builder_tests >>"
-      - run:
-          name: Functional Tests
-          command: ./functional-tests/run
+      #- go_test:
+      #    sector_builder_tests: "<< parameters.sector_builder_tests >>"
+      #- run:
+      #    name: Functional Tests
+      #    command: ./functional-tests/run
 
       - run:
           name: Create linux bundle
@@ -301,6 +301,9 @@ jobs:
 
       - store_test_results:
           path: test-results
+
+      - run:
+          cmd: echo "nightly variable: << parameters.nightly >>"
 
       - when:
           condition: << parameters.nightly >>
