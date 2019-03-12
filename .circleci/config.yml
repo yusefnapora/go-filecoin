@@ -75,6 +75,19 @@ commands:
           name: read and export nightly FILECOIN_BINARY_VERSION
           command:
             echo "export FILECOIN_BINARY_VERSION="$(cat release-version-nightly.txt)"" >> $BASH_ENV
+  trigger_infra_build:
+    parameters:
+      branch:
+        type: string
+      job:
+        type: string
+    steps:
+      - run:
+          name: Trigger a build in go-filecoin-infra
+          command: |
+            sudo apt-get install -y curl
+            # FILECOIN_BINARY_VERSION must be set in BASH_ENV of job calling this command
+            curl -d build_parameters[FILECOIN_BINARY_VERSION]=${FILECOIN_BINARY_VERSION} -d build_parameters[CIRCLE_JOB]=<< parameters.job >> https://circleci.com/api/v1.1/project/github/filecoin-project/go-filecoin-infra/tree/<< parameters.branch >>?circle-token=$CIRCLE_API_TOKEN
 
 jobs:
   build_macos:
@@ -455,11 +468,9 @@ jobs:
             git config user.name filecoin-helper
             git tag -f -a ${FILECOIN_BINARY_VERSION} -m "$(date -uIseconds)"
             git push -f https://${GITHUB_TOKEN}@github.com/filecoin-project/go-filecoin.git ${FILECOIN_BINARY_VERSION}
-      - run:
-          name: Trigger nightly deploy in go-filecoin-infra
-          command: |
-            sudo apt-get install -y curl jq
-            curl -X POST --header "Content-Type: application/json" -d '{"branch":"filecoin-nightly"}' https://circleci.com/api/v1.1/project/github/filecoin-project/go-filecoin-infra/build?circle-token=$CIRCLE_API_TOKEN
+      - trigger_infra_build:
+          job: deploy_nightly_devnet
+          branch: filecoin-nightly
   trigger_user_devnet_deploy:
     docker:
       - image: circleci/golang:latest
