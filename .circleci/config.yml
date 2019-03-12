@@ -6,6 +6,11 @@ parameters:
       description: "Run the sector builder integration tests"
       type: boolean
       default: false
+  nightly_param: &nightly_param
+    nightly:
+      description: "job is being invoked from nightly workflow"
+      type: boolean
+      default: false
 
 commands:
   rust_fil_proofs_checksum:
@@ -49,6 +54,27 @@ commands:
           name: fetch all tags
           command: |
             git fetch --all
+  # creates nightly tag from build number of build_linux job
+  create_nightly_version:
+    steps:
+      - run:
+          name: create and export nightly FILECOIN_BINARY_VERSION
+          command: |
+            echo "export FILECOIN_BINARY_VERSION="nightly-${CIRCLE_BUILD_NUM}-$(echo $CIRCLE_SHA1 | cut -c -6)"" >> $BASH_ENV
+            source $BASH_ENV
+            echo "$FILECOIN_BINARY_VERSION" > release-version-nightly.txt
+      - persist_to_workspace:
+          root: "."
+          paths:
+            - "release-version-nightly.txt"
+  # fetches nightly tag generated at build_linux job and set FILECOIN_BINARY_VERSION
+  # requires workspace to be attached
+  get_nightly_version:
+    steps:
+      - run:
+          name: read and export nightly FILECOIN_BINARY_VERSION
+          command:
+            echo "export FILECOIN_BINARY_VERSION="$(cat release-version-nightly.txt)"" >> $BASH_ENV
 
 jobs:
   build_macos:
@@ -159,6 +185,7 @@ jobs:
     resource_class: xlarge
     parameters:
       <<: *sector_builder_tests_param
+      <<: *nightly_param
     steps:
       - run:
           name: Configure environment variables
@@ -262,6 +289,11 @@ jobs:
       - store_test_results:
           path: test-results
 
+      - when:
+          condition: << parameters.nightly >>
+          steps:
+            - create_nightly_version
+
       - persist_to_workspace:
           root: "."
           paths:
@@ -288,6 +320,7 @@ jobs:
           name: Publish new release
           command: |
             ./scripts/publish-release.sh
+
   build_faucet_and_genesis:
     docker:
       - image: circleci/golang:1.11.1
@@ -321,6 +354,8 @@ jobs:
     docker:
       - image: circleci/golang:latest
     resource_class: xlarge
+    parameters:
+      <<: *nightly_param
     working_directory: "~/docker_build"
     steps:
       - add_ssh_keys:
@@ -359,6 +394,11 @@ jobs:
             docker build -t filecoin:all --target=base --file Dockerfile.ci.base .
           no_output_timeout: 20m
 
+      - when:
+          condition: << params.nightly >>
+          steps:
+            - get_nightly_version
+
       - run:
           name: build & push image - genesis file server
           command: |
@@ -367,6 +407,10 @@ jobs:
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:$SHORT_GIT_SHA
             docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:latest
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:latest
+            if [[ ! -z "$FILECOIN_BINARY_VERSION" ]]; then
+              docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:${FILECOIN_BINARY_VERSION}
+              docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-genesis-file-server:${FILECOIN_BINARY_VERSION}
+            fi
       - run:
           name: build & push image - faucet
           command: |
@@ -375,6 +419,10 @@ jobs:
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:$SHORT_GIT_SHA
             docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:latest
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:latest
+            if [[ ! -z "$FILECOIN_BINARY_VERSION" ]]; then
+              docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:${FILECOIN_BINARY_VERSION}
+              docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin-faucet:${FILECOIN_BINARY_VERSION}
+            fi
       - run:
           name: build & push image - filecoin
           command: |
@@ -385,15 +433,18 @@ jobs:
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:$SHORT_GIT_SHA
             docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:latest
             docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:latest
+            if [[ ! -z "$FILECOIN_BINARY_VERSION" ]]; then
+              docker tag 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:$SHORT_GIT_SHA 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:${FILECOIN_BINARY_VERSION}
+              docker push 657871693752.dkr.ecr.us-east-1.amazonaws.com/filecoin:${FILECOIN_BINARY_VERSION}
+            fi
   trigger_nightly_devnet_deploy:
     docker:
       - image: circleci/golang:latest
     resource_class: small
     steps:
       - setup_remote_docker
-      # The first checkout, trigger_nightly_devnet_deploy has a dependency on docker_build_img and build_linux, so
-      # the lateast successful build will be the same HEAD
       - checkout
+      - get_nightly_version
       # The -f flag is require to override the local tag (may exist from previous runs or during checkout)
       # and the force flag on push is required as we are going to be overrride the tag which is not allowed by default
       # We currently create annotated flags to keep track of the timestamp when the tag was created
@@ -402,8 +453,8 @@ jobs:
           command: |
             git config user.email dev-helper@filecoin.io
             git config user.name filecoin-helper
-            git tag -f -a devnet-nightly -m "$(date -uIseconds)"
-            git push -f https://${GITHUB_TOKEN}@github.com/filecoin-project/go-filecoin.git devnet-nightly
+            git tag -f -a ${FILECOIN_BINARY_VERSION} -m "$(date -uIseconds)"
+            git push -f https://${GITHUB_TOKEN}@github.com/filecoin-project/go-filecoin.git ${FILECOIN_BINARY_VERSION}
       - run:
           name: Trigger nightly deploy in go-filecoin-infra
           command: |
@@ -538,11 +589,13 @@ workflows:
               only:
                 - master
     jobs:
-      - build_linux
+      - build_linux:
+          nightly: true
       - build_faucet_and_genesis:
           requires:
             - build_linux
       - build_docker_img:
+          nightly: true
           requires:
             - build_linux
             - build_faucet_and_genesis
