@@ -1,8 +1,8 @@
----
+<!---
 title: "More HowTos"
 weight: 90
-pre: "<i class='fas fa-ellipsis-h'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-ellipsis-h'></i> "
+--->
 
 # HOW TO: Connect Two Nodes
 

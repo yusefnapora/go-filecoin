@@ -1,8 +1,8 @@
----
+<!---
 title: Commands
 weight: 40
-pre: "<i class='fas fa-terminal'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-terminal'></i> "
+--->
 
 Run `go-filecoin --help` for a complete list of commands.
 

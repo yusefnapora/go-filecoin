@@ -1,8 +1,8 @@
----
+<!---
 title: "Devnets"
 weight: 60
-pre: "<i class='fas fa-globe'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-globe'></i> "
+--->
 
 There are currently 3 Filecoin developer networks (aka devnets) available for development and testing.
 

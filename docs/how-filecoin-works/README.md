@@ -1,8 +1,8 @@
----
+<!---
 title: "How Filecoin Works"
 weight: 70
-pre: "<i class='fas fa-hat-wizard'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-hat-wizard'></i> "
+--->
 
 ## What is Filecoin?
 Filecoin is a decentralized storage network that turns the world’s unused storage into an algorithmic market, creating a permanent, decentralized future for the web. **Miners** earn the native protocol token (also called “filecoin”) by providing data storage and/or retrieval. **Clients** pay miners to store or retrieve data.

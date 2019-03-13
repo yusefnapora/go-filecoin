@@ -1,8 +1,8 @@
----
+<!---
 title: "Getting Started"
 weight: 1
-pre: "<i class='fas fa-motorcycle'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-motorcycle'></i> "
+--->
 
 This is a step-by-step guide for installing and running a Filecoin node on your computer. Subsequent tutorials explain how to [mine Filecoin](../mining-filecoin) or [store data](../storing-on-filecoin) with your node.
 

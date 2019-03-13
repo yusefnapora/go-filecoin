@@ -1,8 +1,8 @@
----
+<!---
 title: "Storing on Filecoin"
 weight: 30
-pre: "<i class='fas fa-hdd'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-hdd'></i> "
+--->
 
 This guide will show you how to store data on Filecoin by making storage deals with storage miners.
 

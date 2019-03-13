@@ -1,8 +1,8 @@
----
+<!---
 title: "Dashboards"
 weight: 50
-pre: "<i class='fas fa-tachometer-alt'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-tachometer-alt'></i> "
+--->
 
 The Filecoin dashboards provides a visual way to see nodes on the Filecoin network.
 

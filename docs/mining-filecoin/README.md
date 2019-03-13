@@ -1,8 +1,8 @@
----
+<!---
 title: "Mining Filecoin"
 weight: 20
-pre: "<i class='fas fa-gem'></i>&nbsp;"
----
+pre: "<i class='fas fa-fw fa-gem'></i> "
+--->
 
 
 This guide provides an overview of how mining works, and a step-by-step of how to mine on the Filecoin network.
