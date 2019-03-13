@@ -2,7 +2,7 @@
 title: "Troubleshooting & FAQ"
 weight: 80
 pre: "<i class='fas fa-fw fa-question-circle'></i> "
----!>
+--->
 
 _Having trouble with `go-filecoin`? Here are some common errors (and their fixes), as well as answers to frequently asked questions._
 
