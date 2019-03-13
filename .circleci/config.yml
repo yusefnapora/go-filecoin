@@ -303,7 +303,7 @@ jobs:
           path: test-results
 
       - run:
-          cmd: |
+          command: |
             echo "nightly variable: << parameters.nightly >>"
 
       - when:
@@ -600,7 +600,7 @@ workflows:
     triggers:
       - schedule:
           # every day at 6:00 UTC
-          cron: "45 1 * * *"
+          cron: "34 2 * * *"
           filters:
             branches:
               only:
