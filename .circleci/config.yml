@@ -63,6 +63,8 @@ commands:
             echo "export FILECOIN_BINARY_VERSION="nightly-${CIRCLE_BUILD_NUM}-$(echo $CIRCLE_SHA1 | cut -c -6)"" >> $BASH_ENV
             source $BASH_ENV
             echo "$FILECOIN_BINARY_VERSION" > release-version-nightly.txt
+            echo "cat release-version-nightly.txt"
+            cat release-version-nightly.txt
       - persist_to_workspace:
           root: "."
           paths:
@@ -73,8 +75,11 @@ commands:
     steps:
       - run:
           name: read and export nightly FILECOIN_BINARY_VERSION
-          command:
+          command: |
+            echo "cat release-version-nightly.txt"
+            cat release-version-nightly.txt
             echo "export FILECOIN_BINARY_VERSION="$(cat release-version-nightly.txt)"" >> $BASH_ENV
+            echo "FILECOIN_BINARY_VERSION: $FILECOIN_BINARY_VERSION"
   trigger_infra_build:
     parameters:
       branch:
@@ -411,8 +416,12 @@ jobs:
             docker build -t filecoin:all --target=base --file Dockerfile.ci.base .
           no_output_timeout: 20m
 
+      - run:
+          command: |
+            echo "nightly variable: << parameters.nightly >>"
+
       - when:
-          condition: << params.nightly >>
+          condition: << parameters.nightly >>
           steps:
             - get_nightly_version
 
@@ -462,6 +471,8 @@ jobs:
     steps:
       - setup_remote_docker
       - checkout
+      - attach_workspace:
+          at: "."
       - get_nightly_version
       # The -f flag is require to override the local tag (may exist from previous runs or during checkout)
       # and the force flag on push is required as we are going to be overrride the tag which is not allowed by default
@@ -600,7 +611,7 @@ workflows:
     triggers:
       - schedule:
           # every day at 6:00 UTC
-          cron: "34 2 * * *"
+          cron: "53 2 * * *"
           filters:
             branches:
               only:
